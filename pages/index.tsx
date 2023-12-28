@@ -2,9 +2,11 @@ import { use, useEffect, useState } from "react";
 import supabase from "./utils/SupaBaseClient";
 import ImageUploading, { ImageListType } from "react-images-uploading";
 type Link = {
+  id: number;
   Title: string;
   URL: string;
 };
+
 export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [userId, setUserId] = useState<string | undefined>();
@@ -12,9 +14,7 @@ export default function Home() {
   const [URL, setUrl] = useState<string | undefined>();
   const [links, setLinks] = useState<Link[]>([]);
   const [images, setImages] = useState<ImageListType>([]);
-  const [profilePictureUrl, setProfilePictureUrl] = useState<
-    string | undefined
-  >();
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>();
 
   const onImageChange = (imageList: ImageListType) => {
     setImages(imageList);
@@ -38,7 +38,7 @@ export default function Home() {
       try {
         const { data, error } = await supabase
           .from("links")
-          .select("Title, URL")
+          .select("id,Title, URL")
           .eq("user_id", userId);
         if (error) throw error;
         setLinks(data);
@@ -116,6 +116,69 @@ export default function Home() {
       console.log("error: ", error);
     }
   };
+  const removeProfilePicture = async () => {
+    try {
+      // Step 1: Fetch the current profile picture URL
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("profile_picture_url")
+        .eq("id", userId)
+        .single();
+
+      if (userError) throw userError;
+      const profilePicUrl = userData.profile_picture_url;
+
+      // Check if there is a profile picture to remove
+      if (!profilePicUrl) {
+        console.log("No profile picture to remove.");
+        return;
+      }
+
+      // Step 2: Delete the image from Supabase storage
+      const filePath = profilePicUrl.split("/").pop(); // Extract the file path
+      const { error: storageError } = await supabase.storage
+        .from("publicb")
+        .remove([`${userId}/${filePath}`]);
+
+      if (storageError) throw storageError;
+
+      // Step 3: Update the users table
+      const { error: updateError } = await supabase
+        .from("users")
+        .update({ profile_picture_url: null })
+        .eq("id", userId);
+
+      if (updateError) throw updateError;
+
+      // Step 4: Update the state and UI
+      setProfilePictureUrl(null);
+      setImages([]);
+      console.log("Profile picture removed successfully.");
+    } catch (error) {
+      console.error("Error removing profile picture:", error);
+    }
+  };
+
+  // Function to remove a link
+  const removeLink = async (linkToRemove: Link) => {
+    try {
+      const { error } = await supabase
+        .from("links")
+        .delete()
+        .eq("id", linkToRemove.id);
+
+      if (error) {
+        throw error;
+      }
+
+      setLinks((currentLinks) =>
+        currentLinks.filter((link) => link.id !== linkToRemove.id)
+      );
+    } catch (error) {
+      console.error("Error removing link:", error);
+    }
+  };
+
   return (
     <div className="flex h-screen bg-gray-900 px-4">
       {isAuthenticated && (
@@ -151,7 +214,6 @@ export default function Home() {
                     <span className="text-gray-400">No image</span>
                   </div>
                 )}
-
                 {/* Conditional Rendering of Buttons */}
                 {images.length === 0 && !profilePictureUrl ? (
                   <button
@@ -171,9 +233,10 @@ export default function Home() {
                     >
                       Upload
                     </button>
+
                     <button
                       className="btn btn-active btn-neutral mt-2"
-                      onClick={onImageRemoveAll}
+                      onClick={removeProfilePicture}
                     >
                       Remove Image
                     </button>
@@ -217,6 +280,7 @@ export default function Home() {
           </div>
         </div>
       )}
+      {/* Right section: Profile Picture and Links */}
       <div className="flex flex-col w-1/2 h-full overflow-auto items-center p-4">
         {/* Profile Picture moved towards center but above the links */}
         <div className="flex flex-col flex-grow justify-center items-center">
@@ -258,9 +322,7 @@ export default function Home() {
                 </button>
                 <button
                   className="btn btn-square btn-outline ml-2 opacity-0 group-hover:opacity-100"
-                  onClick={() => {
-                    /* Additional button action here */
-                  }}
+                  onClick={() => removeLink(link)}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
