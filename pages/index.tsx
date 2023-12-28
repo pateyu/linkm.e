@@ -85,7 +85,7 @@ export default function Home() {
         if (error) throw error;
         console.log("data: ", data);
         if (links) {
-          setLinks([...data, ...links]);
+          setLinks([...links, ...data]);
         }
       }
     } catch (error) {
@@ -217,47 +217,69 @@ export default function Home() {
           </div>
         </div>
       )}
-
-      {/* Right section: Section for displaying profile picture and links */}
       <div className="flex flex-col w-1/2 h-full overflow-auto items-center p-4">
-        {/* Profile Picture at the top */}
-        <div className="mt-4 mb-6">
-          {profilePictureUrl ? (
-            <img
-              src={profilePictureUrl}
-              alt="Profile"
-              className="w-24 h-24 rounded-full object-cover"
-            />
-          ) : (
-            images.length > 0 && (
+        {/* Profile Picture moved towards center but above the links */}
+        <div className="flex flex-col flex-grow justify-center items-center">
+          <div className="mb-6 self-center">
+            {profilePictureUrl ? (
               <img
-                src={images[0]["data_url"]}
+                src={profilePictureUrl}
                 alt="Profile"
-                className="w-24 h-24 rounded-full object-cover"
+                className="w-24 h-24 rounded-full object-cover "
               />
-            )
-          )}
-          {!profilePictureUrl && images.length === 0 && (
-            <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center">
-              <span className="text-gray-400">No image</span>
-            </div>
-          )}
-        </div>
+            ) : (
+              images.length > 0 && (
+                <img
+                  src={images[0]["data_url"]}
+                  alt="Profile"
+                  className="w-24 h-24 rounded-full object-cover"
+                />
+              )
+            )}
+            {!profilePictureUrl && images.length === 0 && (
+              <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center">
+                <span className="text-gray-400">No image</span>
+              </div>
+            )}
+          </div>
 
-        {/* Container for links */}
-        <div className="flex-grow flex flex-col justify-center items-center">
-          {links?.map((link: Link, index: number) => (
-            <div
-              className="text-white font-bold text-xl mb-6 cursor-pointer"
-              key={index}
-              onClick={(e) => {
-                e.preventDefault();
-                window.location.href = link.URL;
-              }}
-            >
-              {link.Title}
-            </div>
-          ))}
+          {/* Container for links, positioned below the profile picture */}
+          <div className="w-full">
+            {links?.map((link: Link, index: number) => (
+              <div className="flex items-center mb-3 group" key={index}>
+                <button
+                  className="btn w-full px-10 text-white font-bold py-4 btn-wide rounded bg-slate-600 hover:bg-slate-700"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.location.href = link.URL;
+                  }}
+                >
+                  {link.Title}
+                </button>
+                <button
+                  className="btn btn-square btn-outline ml-2 opacity-0 group-hover:opacity-100"
+                  onClick={() => {
+                    /* Additional button action here */
+                  }}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
