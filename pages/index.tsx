@@ -1,6 +1,8 @@
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import supabase from "./utils/SupaBaseClient";
 import ImageUploading, { ImageListType } from "react-images-uploading";
+import { useTheme } from "next-themes";
+import Image from "next/image";
 type Link = {
   id: number;
   Title: string;
@@ -15,6 +17,7 @@ export default function Home() {
   const [links, setLinks] = useState<Link[]>([]);
   const [images, setImages] = useState<ImageListType>([]);
   const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>();
+  const { theme, resolvedTheme, setTheme } = useTheme();
 
   const onImageChange = (imageList: ImageListType) => {
     setImages(imageList);
@@ -118,7 +121,6 @@ export default function Home() {
   };
   const removeProfilePicture = async () => {
     try {
-      // Step 1: Fetch the current profile picture URL
       const { data: userData, error: userError } = await supabase
         .from("users")
         .select("profile_picture_url")
@@ -128,21 +130,18 @@ export default function Home() {
       if (userError) throw userError;
       const profilePicUrl = userData.profile_picture_url;
 
-      // Check if there is a profile picture to remove
       if (!profilePicUrl) {
         console.log("No profile picture to remove.");
         return;
       }
 
-      // Step 2: Delete the image from Supabase storage
-      const filePath = profilePicUrl.split("/").pop(); // Extract the file path
+      const filePath = profilePicUrl.split("/").pop();
       const { error: storageError } = await supabase.storage
         .from("publicb")
         .remove([`${userId}/${filePath}`]);
 
       if (storageError) throw storageError;
 
-      // Step 3: Update the users table
       const { error: updateError } = await supabase
         .from("users")
         .update({ profile_picture_url: null })
@@ -150,7 +149,6 @@ export default function Home() {
 
       if (updateError) throw updateError;
 
-      // Step 4: Update the state and UI
       setProfilePictureUrl(null);
       setImages([]);
       console.log("Profile picture removed successfully.");
@@ -159,7 +157,6 @@ export default function Home() {
     }
   };
 
-  // Function to remove a link
   const removeLink = async (linkToRemove: Link) => {
     try {
       const { error } = await supabase
@@ -178,108 +175,148 @@ export default function Home() {
       console.error("Error removing link:", error);
     }
   };
+  const toggleTheme = () => {
+    setTheme(resolvedTheme === "dark" ? "light-theme" : "dark");
+  };
 
   return (
-    <div className="flex h-screen bg-gray-900 px-4">
+    <div className="flex h-screen px-4">
       {isAuthenticated && (
-        <div className="flex flex-col w-1/2 h-full p-4 justify-center items-center space-y-6">
-          {/* Left section: Image Upload Section */}
-          <ImageUploading
-            multiple={false}
-            value={images}
-            onChange={onImageChange}
-            maxNumber={1}
-            dataURLKey="data_url"
-          >
-            {({ onImageUpload, onImageRemoveAll, dragProps, isDragging }) => (
-              <div className="w-full max-w-md flex flex-col items-center justify-center space-y-4">
-                {/* Display the profile picture or a placeholder */}
-                {profilePictureUrl ? (
-                  <img
-                    src={profilePictureUrl}
-                    alt="Profile"
-                    className="w-24 h-24 rounded-full object-cover"
-                  />
-                ) : (
-                  images.length > 0 && (
+        // Left Section
+        <div className="flex flex-col w-1/2 h-full p-4 space-y-6">
+          <div className="flex items-center justify-start py-4">
+            <button onClick={toggleTheme} className="p-2">
+              {resolvedTheme === "dark" ? (
+                <Image src="/sun.png" alt="Light Mode" width={24} height={24} />
+              ) : (
+                <Image src="/moon.png" alt="Dark Mode" width={24} height={24} />
+              )}
+            </button>
+          </div>
+          <div className="flex flex-col p-4 space-y-5 h-full justify-center items-center">
+            <ImageUploading
+              multiple={false}
+              value={images}
+              onChange={onImageChange}
+              maxNumber={1}
+              dataURLKey="data_url"
+            >
+              {({ onImageUpload, onImageRemoveAll, dragProps, isDragging }) => (
+                <div className="w-full max-w-md flex flex-col items-center justify-center space-y-4">
+                  {/* Display the profile picture or a placeholder */}
+                  {profilePictureUrl ? (
                     <img
-                      src={images[0]["data_url"]}
+                      src={profilePictureUrl}
                       alt="Profile"
                       className="w-24 h-24 rounded-full object-cover"
                     />
-                  )
-                )}
-                {!profilePictureUrl && images.length === 0 && (
-                  <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center">
-                    <span className="text-gray-400">No image</span>
-                  </div>
-                )}
-                {/* Conditional Rendering of Buttons */}
-                {images.length === 0 && !profilePictureUrl ? (
-                  <button
-                    className={`w-full text-white font-bold py-2 px-4 rounded ${
-                      isDragging ? "bg-gray-600" : "bg-gray-700"
-                    } focus:outline-none focus:shadow-outline border border-gray-600 hover:bg-gray-600`}
-                    onClick={onImageUpload}
-                    {...dragProps}
-                  >
-                    Click or Drag Image
-                  </button>
-                ) : (
-                  <>
+                  ) : (
+                    images.length > 0 && (
+                      <img
+                        src={images[0]["data_url"]}
+                        alt="Profile"
+                        className="w-24 h-24 rounded-full object-cover"
+                      />
+                    )
+                  )}
+                  {!profilePictureUrl && images.length === 0 && (
+                    <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center mb-3">
+                      <span className="text-gray-400">No image</span>
+                    </div>
+                  )}
+                  {/* Conditional Rendering of Buttons */}
+                  {images.length === 0 && !profilePictureUrl ? (
                     <button
-                      className="btn btn-active btn-primary mt-2"
-                      onClick={uploadProfilePicture}
+                      className={`w-full text-white font-bold py-2 px-4 rounded ${
+                        isDragging ? "bg-gray-600" : "bg-gray-700"
+                      } focus:outline-none focus:shadow-outline border border-gray-600 hover:bg-gray-600`}
+                      onClick={onImageUpload}
+                      {...dragProps}
                     >
-                      Upload
+                      Click or Drag Image
                     </button>
+                  ) : (
+                    <>
+                      <button
+                        className="btn btn-active btn-primary mt-2"
+                        onClick={uploadProfilePicture}
+                      >
+                        Upload
+                      </button>
+                      <button
+                        className="btn btn-active btn-neutral mt-2"
+                        onClick={() => {
+                          removeProfilePicture();
+                          onImageRemoveAll();
+                        }}
+                      >
+                        Remove Image
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </ImageUploading>
 
-                    <button
-                      className="btn btn-active btn-neutral mt-2"
-                      onClick={removeProfilePicture}
-                    >
-                      Remove Image
-                    </button>
-                  </>
-                )}
+            {/* Form for adding links */}
+            <div className="form-control w-full max-w-md mb-0">
+              <label className="label">
+                <span className="label-text dark:text-white text-black">
+                  Link Name
+                </span>
+              </label>
+              <input
+                type="text"
+                name="Title"
+                id="Title"
+                placeholder="Link Name"
+                className="input input-bordered w-full py-3"
+                onChange={(e) => setTitle(e.target.value)}
+              />
+              <label className="label">
+                <span className="label-text dark:text-white text-black">
+                  URL
+                </span>
+              </label>
+              <input
+                type="text"
+                name="URL"
+                id="URL"
+                placeholder="URL"
+                className="input input-bordered w-full py-3 mb-5"
+                onChange={(e) => setUrl(e.target.value)}
+              />
+              <button
+                type="button"
+                className="btn btn-active btn-neutral mt-4"
+                onClick={addNewLink}
+              >
+                Add Link
+              </button>
+            </div>
+            <div className="w-full max-w-md p-4 bg-slate-700 rounded-lg">
+              <div className="text-center mb-4 font-bold text-white">
+                Theme Selection
               </div>
-            )}
-          </ImageUploading>
-
-          {/* Form for adding links */}
-          <div className="form-control w-full max-w-md">
-            <label className="label">
-              <span className="label-text text-white">Link Name</span>
-            </label>
-            <input
-              type="text"
-              name="Title"
-              id="Title"
-              placeholder="Link Name"
-              className="input input-bordered w-full py-3"
-              onChange={(e) => setTitle(e.target.value)}
-            />
-            <label className="label">
-              <span className="label-text text-white">URL</span>
-            </label>
-            <input
-              type="text"
-              name="URL"
-              id="URL"
-              placeholder="URL"
-              className="input input-bordered w-full py-3"
-              onChange={(e) => setUrl(e.target.value)}
-            />
-            <button
-              type="button"
-              className="btn btn-active btn-neutral mt-4"
-              onClick={addNewLink}
-            >
-              Add Link
-            </button>
+              <div className="flex justify-center space-x-4">
+                <button
+                  className="btn text-white bg-dark-500"
+                  onClick={() => setTheme("dark")}
+                >
+                  Dark
+                </button>
+                <button
+                  className="btn text-black bg-white"
+                  onClick={() => setTheme("light-theme")}
+                >
+                  Light
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
+
       {/* Right section: Profile Picture and Links */}
       <div className="flex flex-col w-1/2 h-full overflow-auto items-center p-4">
         {/* Profile Picture moved towards center but above the links */}

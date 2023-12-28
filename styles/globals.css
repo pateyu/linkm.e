@@ -2,18 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Dark color scheme */
 :root {
-  --foreground-rgb: 255, 255, 255; /* White color for text */
-  --background-start-rgb: 23, 25, 30; /* Dark bluish-greenish background */
-  --background-end-rgb: 23, 25, 30; /* Dark bluish-greenish background */
+  --foreground-rgb: 255, 255, 255;
+  --background-rgb: 15, 25, 25;
 }
+
+/* Light color scheme */
+.light-theme {
+  --foreground-rgb: 240, 240, 240;
+  --background-rgb: 250, 250, 250;
+}
+
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  background: rgb(var(--background-rgb));
 }

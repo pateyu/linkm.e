@@ -47,7 +47,7 @@ export default function Signup() {
         <input
           type="text"
           placeholder="info@site.com"
-          className="input input-bordered w-full py-3"
+          className="input input-bordered text-white w-full py-3"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
@@ -58,7 +58,7 @@ export default function Signup() {
           <input
             type={passwordShown ? "text" : "password"}
             placeholder="Password"
-            className="input input-bordered w-full py-3"
+            className="input input-bordered text-white w-full py-3"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
