@@ -12,6 +12,10 @@ export default function Home() {
   const [URL, setUrl] = useState<string | undefined>();
   const [links, setLinks] = useState<Link[]>([]);
   const [images, setImages] = useState<ImageListType>([]);
+  const [profilePictureUrl, setProfilePictureUrl] = useState<
+    string | undefined
+  >();
+
   const onImageChange = (imageList: ImageListType) => {
     setImages(imageList);
   };
@@ -48,6 +52,25 @@ export default function Home() {
     }
   }, [userId]);
 
+  useEffect(() => {
+    const getUser = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("users")
+          .select("profile_picture_url")
+          .eq("id", userId);
+        if (error) throw error;
+        const profilePictureUrl = data[0].profile_picture_url;
+        setProfilePictureUrl(profilePictureUrl);
+      } catch (error) {
+        console.log("error: ", error);
+      }
+    };
+    if (userId) {
+      getUser();
+    }
+  }, [userId]);
+
   const addNewLink = async () => {
     try {
       if (Title && URL && userId) {
@@ -69,6 +92,30 @@ export default function Home() {
       console.log("error: ", error);
     }
   };
+  const uploadProfilePicture = async () => {
+    try {
+      if (images.length > 0) {
+        const image = images[0];
+        if (image.file && userId) {
+          const { data, error } = await supabase.storage
+            .from("publicb")
+            .upload(`${userId}/${image.file.name}`, image.file, {
+              upsert: true,
+            });
+          if (error) throw error;
+          const res = supabase.storage.from("publicb").getPublicUrl(data.path);
+          const publicUrl = res.data.publicUrl;
+          const updateUserResponse = await supabase
+            .from("users")
+            .update({ profile_picture_url: publicUrl })
+            .eq("id", userId);
+          if (updateUserResponse.error) throw error;
+        }
+      }
+    } catch (error) {
+      console.log("error: ", error);
+    }
+  };
   return (
     <div className="flex h-screen bg-gray-900 px-4">
       {isAuthenticated && (
@@ -82,22 +129,31 @@ export default function Home() {
             dataURLKey="data_url"
           >
             {({ onImageUpload, onImageRemoveAll, dragProps, isDragging }) => (
-              // Profile Picture Section
               <div className="w-full max-w-md flex flex-col items-center justify-center space-y-4">
-                {/* Display the first image or a placeholder */}
-                {images.length > 0 ? (
+                {/* Display the profile picture or a placeholder */}
+                {profilePictureUrl ? (
                   <img
-                    src={images[0]["data_url"]}
+                    src={profilePictureUrl}
                     alt="Profile"
                     className="w-24 h-24 rounded-full object-cover"
                   />
                 ) : (
+                  images.length > 0 && (
+                    <img
+                      src={images[0]["data_url"]}
+                      alt="Profile"
+                      className="w-24 h-24 rounded-full object-cover"
+                    />
+                  )
+                )}
+                {!profilePictureUrl && images.length === 0 && (
                   <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center">
                     <span className="text-gray-400">No image</span>
                   </div>
                 )}
-                {/* Click or Drag Image Button */}
-                <div className="w-full">
+
+                {/* Conditional Rendering of Buttons */}
+                {images.length === 0 && !profilePictureUrl ? (
                   <button
                     className={`w-full text-white font-bold py-2 px-4 rounded ${
                       isDragging ? "bg-gray-600" : "bg-gray-700"
@@ -107,20 +163,26 @@ export default function Home() {
                   >
                     Click or Drag Image
                   </button>
-                </div>
-
-                {/* Remove Image Button */}
-                {images.length > 0 && (
-                  <button
-                    className="btn btn-active btn-neutral mt-2"
-                    onClick={onImageRemoveAll}
-                  >
-                    Remove Image
-                  </button>
+                ) : (
+                  <>
+                    <button
+                      className="btn btn-active btn-primary mt-2"
+                      onClick={uploadProfilePicture}
+                    >
+                      Upload
+                    </button>
+                    <button
+                      className="btn btn-active btn-neutral mt-2"
+                      onClick={onImageRemoveAll}
+                    >
+                      Remove Image
+                    </button>
+                  </>
                 )}
               </div>
             )}
           </ImageUploading>
+
           {/* Form for adding links */}
           <div className="form-control w-full max-w-md">
             <label className="label">
@@ -155,22 +217,33 @@ export default function Home() {
           </div>
         </div>
       )}
+
       {/* Right section: Section for displaying profile picture and links */}
       <div className="flex flex-col w-1/2 h-full overflow-auto items-center p-4">
         {/* Profile Picture at the top */}
         <div className="mt-4 mb-6">
-          {images.length > 0 ? (
+          {profilePictureUrl ? (
             <img
-              src={images[0]["data_url"]}
+              src={profilePictureUrl}
               alt="Profile"
               className="w-24 h-24 rounded-full object-cover"
             />
           ) : (
+            images.length > 0 && (
+              <img
+                src={images[0]["data_url"]}
+                alt="Profile"
+                className="w-24 h-24 rounded-full object-cover"
+              />
+            )
+          )}
+          {!profilePictureUrl && images.length === 0 && (
             <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center">
               <span className="text-gray-400">No image</span>
             </div>
           )}
         </div>
+
         {/* Container for links */}
         <div className="flex-grow flex flex-col justify-center items-center">
           {links?.map((link: Link, index: number) => (

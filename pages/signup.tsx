@@ -1,5 +1,6 @@
 import { useState } from "react";
 import supabase from "./utils/SupaBaseClient";
+import { error } from "console";
 
 export default function Signup() {
   const [email, setEmail] = useState("");
@@ -17,12 +18,21 @@ export default function Signup() {
           password: password,
         });
         if (res.error) throw res.error;
-        {
-          const userId = res.data.user?.id;
+        const userId = res.data.user?.id;
+        if (userId) {
+          await createUser(userId);
           console.log("userId: ", userId);
         }
       }
     } catch {}
+  }
+  async function createUser(userId: string) {
+    try {
+      const { error } = await supabase.from("users").insert({ id: userId });
+      if (error) throw error;
+    } catch (error) {
+      console.log("error: ", error);
+    }
   }
 
   return (
