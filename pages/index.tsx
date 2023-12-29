@@ -17,7 +17,7 @@ export default function Home() {
   const [links, setLinks] = useState<Link[]>([]);
   const [images, setImages] = useState<ImageListType>([]);
   const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>();
-  const { theme, resolvedTheme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
 
   const onImageChange = (imageList: ImageListType) => {
     setImages(imageList);
@@ -25,12 +25,17 @@ export default function Home() {
 
   useEffect(() => {
     const getUser = async () => {
-      const user = await supabase.auth.getUser();
-      console.log("user: ", user);
-      if (user) {
-        const userId = user.data.user?.id;
+      const { data, error } = await supabase.auth.getUser();
+
+      console.log("User data: ", data);
+      console.log("Error: ", error);
+
+      if (data.user && !error) {
         setIsAuthenticated(true);
-        setUserId(userId);
+        setUserId(data.user.id);
+      } else {
+        setIsAuthenticated(false);
+        setUserId(undefined);
       }
     };
     getUser();
@@ -73,6 +78,29 @@ export default function Home() {
       getUser();
     }
   }, [userId]);
+
+  useEffect(() => {
+    const getUserTheme = async () => {
+      if (userId) {
+        try {
+          const { data, error } = await supabase
+            .from("users")
+            .select("theme")
+            .eq("id", userId)
+            .single();
+
+          if (error) throw error;
+          if (data && data.theme) {
+            setTheme(data.theme); // Set the theme from the database
+          }
+        } catch (error) {
+          console.error("Error fetching user theme:", error);
+        }
+      }
+    };
+
+    getUserTheme();
+  }, [userId, setTheme]);
 
   const addNewLink = async () => {
     try {
@@ -175,179 +203,245 @@ export default function Home() {
       console.error("Error removing link:", error);
     }
   };
-  const toggleTheme = () => {
-    setTheme(resolvedTheme === "dark" ? "light-theme" : "dark");
-  };
+  const toggleTheme = async () => {
+    const newTheme = resolvedTheme === "dark" ? "light-theme" : "dark";
+    setTheme(newTheme);
 
+    // Update the theme in Supabase only if the user is authenticated
+    if (isAuthenticated && userId) {
+      try {
+        const { error } = await supabase
+          .from("users")
+          .update({ theme: newTheme })
+          .eq("id", userId);
+
+        if (error) {
+          throw error;
+        }
+        console.log("Theme updated successfully in Supabase.");
+      } catch (error) {
+        console.error("Error updating theme in Supabase:", error);
+      }
+    }
+  };
   return (
     <div className="flex h-screen px-4">
-      {isAuthenticated && (
-        // Left Section
-        <div className="flex flex-col w-1/2 h-full p-4 space-y-6">
-          <div className="flex items-center justify-start py-4">
-            <button onClick={toggleTheme} className="p-2">
-              {resolvedTheme === "dark" ? (
-                <Image src="/sun.png" alt="Light Mode" width={24} height={24} />
-              ) : (
-                <Image src="/moon.png" alt="Dark Mode" width={24} height={24} />
-              )}
-            </button>
-          </div>
-          <div className="flex flex-col p-4 space-y-5 h-full justify-center items-center">
-            <ImageUploading
-              multiple={false}
-              value={images}
-              onChange={onImageChange}
-              maxNumber={1}
-              dataURLKey="data_url"
-            >
-              {({ onImageUpload, onImageRemoveAll, dragProps, isDragging }) => (
-                <div className="w-full max-w-md flex flex-col items-center justify-center space-y-4">
-                  {/* Display the profile picture or a placeholder */}
-                  {profilePictureUrl ? (
-                    <img
-                      src={profilePictureUrl}
-                      alt="Profile"
-                      className="w-24 h-24 rounded-full object-cover"
-                    />
-                  ) : (
-                    images.length > 0 && (
+      {isAuthenticated ? (
+        <>
+          {/* Left Section for Authenticated User */}
+          <div className="flex flex-col w-1/2 h-full p-4 space-y-6">
+            <div className="flex items-center justify-start py-4">
+              <button onClick={toggleTheme} className="p-2">
+                {resolvedTheme === "dark" ? (
+                  <Image
+                    src="/sun.png"
+                    alt="Light Mode"
+                    width={24}
+                    height={24}
+                  />
+                ) : (
+                  <Image
+                    src="/moon.png"
+                    alt="Dark Mode"
+                    width={24}
+                    height={24}
+                  />
+                )}
+              </button>
+            </div>
+            <div className="flex flex-col p-4 space-y-5 h-full justify-center items-center">
+              <ImageUploading
+                multiple={false}
+                value={images}
+                onChange={onImageChange}
+                maxNumber={1}
+                dataURLKey="data_url"
+              >
+                {({
+                  onImageUpload,
+                  onImageRemoveAll,
+                  dragProps,
+                  isDragging,
+                }) => (
+                  <div className="w-full max-w-md flex flex-col items-center justify-center space-y-4">
+                    {profilePictureUrl ? (
                       <img
-                        src={images[0]["data_url"]}
+                        src={profilePictureUrl}
                         alt="Profile"
                         className="w-24 h-24 rounded-full object-cover"
                       />
-                    )
-                  )}
-                  {!profilePictureUrl && images.length === 0 && (
-                    <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center mb-3">
-                      <span className="text-gray-400">No image</span>
-                    </div>
-                  )}
-                  {/* Conditional Rendering of Buttons */}
-                  {images.length === 0 && !profilePictureUrl ? (
-                    <button
-                      className={`w-full text-white font-bold py-2 px-4 rounded ${
-                        isDragging ? "bg-gray-600" : "bg-gray-700"
-                      } focus:outline-none focus:shadow-outline border border-gray-600 hover:bg-gray-600`}
-                      onClick={onImageUpload}
-                      {...dragProps}
-                    >
-                      Click or Drag Image
-                    </button>
-                  ) : (
-                    <>
+                    ) : (
+                      images.length > 0 && (
+                        <img
+                          src={images[0]["data_url"]}
+                          alt="Profile"
+                          className="w-24 h-24 rounded-full object-cover"
+                        />
+                      )
+                    )}
+                    {!profilePictureUrl && images.length === 0 && (
+                      <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center mb-3">
+                        <span className="text-gray-400">No image</span>
+                      </div>
+                    )}
+                    {images.length === 0 && !profilePictureUrl ? (
                       <button
-                        className="btn btn-active btn-primary mt-2"
-                        onClick={uploadProfilePicture}
+                        className={`w-full text-white font-bold py-2 px-4 rounded ${
+                          isDragging ? "bg-gray-600" : "bg-gray-700"
+                        } focus:outline-none focus:shadow-outline border border-gray-600 hover:bg-gray-600`}
+                        onClick={onImageUpload}
+                        {...dragProps}
                       >
-                        Upload
+                        Click or Drag Image
                       </button>
-                      <button
-                        className="btn btn-active btn-neutral mt-2"
-                        onClick={() => {
-                          removeProfilePicture();
-                          onImageRemoveAll();
-                        }}
-                      >
-                        Remove Image
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
-            </ImageUploading>
+                    ) : (
+                      <>
+                        <button
+                          className="btn btn-active btn-primary mt-2"
+                          onClick={uploadProfilePicture}
+                        >
+                          Upload
+                        </button>
+                        <button
+                          className="btn btn-active btn-neutral mt-2"
+                          onClick={() => {
+                            removeProfilePicture();
+                            onImageRemoveAll();
+                          }}
+                        >
+                          Remove Image
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </ImageUploading>
 
-            {/* Form for adding links */}
-            <div className="form-control w-full max-w-md mb-0">
-              <label className="label">
-                <span className="label-text dark:text-white text-black">
-                  Link Name
-                </span>
-              </label>
-              <input
-                type="text"
-                name="Title"
-                id="Title"
-                placeholder="Link Name"
-                className="input input-bordered w-full py-3"
-                onChange={(e) => setTitle(e.target.value)}
-              />
-              <label className="label">
-                <span className="label-text dark:text-white text-black">
-                  URL
-                </span>
-              </label>
-              <input
-                type="text"
-                name="URL"
-                id="URL"
-                placeholder="URL"
-                className="input input-bordered w-full py-3 mb-5"
-                onChange={(e) => setUrl(e.target.value)}
-              />
-              <button
-                type="button"
-                className="btn btn-active btn-neutral mt-4"
-                onClick={addNewLink}
-              >
-                Add Link
-              </button>
-            </div>
-            <div className="w-full max-w-md p-4 bg-slate-700 rounded-lg">
-              <div className="text-center mb-4 font-bold text-white">
-                Theme Selection
+              <div className="form-control w-full max-w-md mb-0">
+                <label className="label">
+                  <span className="label-text dark:text-white text-black">
+                    Link Name
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  name="Title"
+                  id="Title"
+                  placeholder="Link Name"
+                  className="input input-bordered w-full py-3"
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+                <label className="label">
+                  <span className="label-text dark:text-white text-black">
+                    URL
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  name="URL"
+                  id="URL"
+                  placeholder="URL"
+                  className="input input-bordered w-full py-3 mb-5"
+                  onChange={(e) => setUrl(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="btn btn-active btn-neutral mt-4"
+                  onClick={addNewLink}
+                >
+                  Add Link
+                </button>
               </div>
-              <div className="flex justify-center space-x-4">
-                <button
-                  className="btn text-white bg-dark-500"
-                  onClick={() => setTheme("dark")}
-                >
-                  Dark
-                </button>
-                <button
-                  className="btn text-black bg-white"
-                  onClick={() => setTheme("light-theme")}
-                >
-                  Light
-                </button>
+              <div className="w-full max-w-md p-4 bg-slate-700 rounded-lg">
+                <div className="text-center mb-4 font-bold text-white">
+                  Theme Selection
+                </div>
+                <div className="flex justify-center space-x-4">
+                  <button
+                    className="btn text-white bg-dark-500"
+                    onClick={() => setTheme("dark")}
+                  >
+                    Dark
+                  </button>
+                  <button
+                    className="btn text-black bg-white"
+                    onClick={() => setTheme("light-theme")}
+                  >
+                    Light
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Right section: Profile Picture and Links */}
-      <div className="flex flex-col w-1/2 h-full overflow-auto items-center p-4">
-        {/* Profile Picture moved towards center but above the links */}
-        <div className="flex flex-col flex-grow justify-center items-center">
-          <div className="mb-6 self-center">
+          {/* Right Section for Authenticated User */}
+          <div className="flex flex-col w-1/2 h-full overflow-auto items-center p-4">
+            <div className="flex flex-col flex-grow justify-center items-center">
+              <div className="mb-6 self-center">
+                {profilePictureUrl ? (
+                  <img
+                    src={profilePictureUrl}
+                    alt="Profile"
+                    className="w-24 h-24 rounded-full object-cover"
+                  />
+                ) : (
+                  images.length > 0 && (
+                    <img
+                      src={images[0]["data_url"]}
+                      alt="Profile"
+                      className="w-24 h-24 rounded-full object-cover"
+                    />
+                  )
+                )}
+                {!profilePictureUrl && images.length === 0 && (
+                  <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center">
+                    <span className="text-gray-400">No image</span>
+                  </div>
+                )}
+              </div>
+              <div className="w-full">
+                {links?.map((link: Link, index: number) => (
+                  <div className="flex items-center mb-3 group" key={index}>
+                    <button
+                      className="btn w-full px-10 text-white font-bold py-4 btn-wide rounded bg-slate-600 hover:bg-slate-700"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        window.location.href = link.URL;
+                      }}
+                    >
+                      {link.Title}
+                    </button>
+                    <button
+                      className="btn btn-square btn-outline ml-2 opacity-0 group-hover:opacity-100"
+                      onClick={() => removeLink(link)}
+                    ></button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="flex flex-col w-full h-full overflow-auto items-center p-4 justify-center">
+          {/* Profile Picture */}
+          <div className="mb-6">
             {profilePictureUrl ? (
               <img
                 src={profilePictureUrl}
                 alt="Profile"
-                className="w-24 h-24 rounded-full object-cover "
+                className="w-24 h-24 rounded-full object-cover"
               />
             ) : (
-              images.length > 0 && (
-                <img
-                  src={images[0]["data_url"]}
-                  alt="Profile"
-                  className="w-24 h-24 rounded-full object-cover"
-                />
-              )
-            )}
-            {!profilePictureUrl && images.length === 0 && (
               <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center">
                 <span className="text-gray-400">No image</span>
               </div>
             )}
           </div>
 
-          {/* Container for links, positioned below the profile picture */}
+          {/* Links */}
           <div className="w-full">
             {links?.map((link: Link, index: number) => (
-              <div className="flex items-center mb-3 group" key={index}>
+              <div className="flex flex-col items-center mb-3" key={index}>
                 <button
                   className="btn w-full px-10 text-white font-bold py-4 btn-wide rounded bg-slate-600 hover:bg-slate-700"
                   onClick={(e) => {
@@ -357,30 +451,11 @@ export default function Home() {
                 >
                   {link.Title}
                 </button>
-                <button
-                  className="btn btn-square btn-outline ml-2 opacity-0 group-hover:opacity-100"
-                  onClick={() => removeLink(link)}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
               </div>
             ))}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
