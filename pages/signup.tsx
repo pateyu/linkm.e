@@ -1,6 +1,6 @@
 import { useState } from "react";
 import supabase from "./utils/SupaBaseClient";
-import { error } from "console";
+import Image from "next/image";
 
 export default function Signup() {
   const [email, setEmail] = useState("");
@@ -67,9 +67,24 @@ export default function Signup() {
             className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
             onClick={togglePasswordVisibility}
           >
-            {passwordShown ? "Hide" : "Show"}
+            {passwordShown ? (
+              <Image
+                src="/noeye.png"
+                alt="Hide Password"
+                width={24}
+                height={24}
+              />
+            ) : (
+              <Image
+                src="/eye.png"
+                alt="Show Password"
+                width={24}
+                height={24}
+              />
+            )}
           </button>
         </div>
+
         <div className="flex justify-center mt-6">
           <button
             className="btn btn-active btn-neutral px-10"
