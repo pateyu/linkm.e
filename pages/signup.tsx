@@ -22,9 +22,13 @@ export default function Signup() {
         if (userId) {
           await createUser(userId);
           console.log("userId: ", userId);
+          alert("Check your email for confirmation!");
         }
       }
-    } catch {}
+    } catch (error) {
+      console.log("error: ", error);
+      alert("Error signing up!");
+    }
   }
   async function createUser(userId: string) {
     try {

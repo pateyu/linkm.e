@@ -26,7 +26,10 @@ export default function Login() {
           router.push("/");
         }
       }
-    } catch {}
+    } catch (error) {
+      console.log("error: ", error);
+      alert("Error Logging in!");
+    }
   }
 
   return (
