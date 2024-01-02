@@ -21,7 +21,7 @@ export default function Signup() {
         if (res.error) throw res.error;
         const userId = res.data.user?.id;
         if (userId) {
-          await createUser(userId);
+          await createUser(userId, username || "");
           console.log("userId: ", userId);
           alert("Check your email for confirmation!");
         }
@@ -31,9 +31,11 @@ export default function Signup() {
       alert("Error signing up!");
     }
   }
-  async function createUser(userId: string) {
+  async function createUser(userId: string, username: string) {
     try {
-      const { error } = await supabase.from("users").insert({ id: userId });
+      const { error } = await supabase
+        .from("users")
+        .insert({ id: userId, username: username });
       if (error) throw error;
     } catch (error) {
       console.log("error: ", error);

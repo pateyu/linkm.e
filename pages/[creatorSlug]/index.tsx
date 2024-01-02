@@ -4,7 +4,6 @@ import ImageUploading, { ImageListType } from "react-images-uploading";
 import { useTheme } from "next-themes";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import { userAgentFromString } from "next/server";
 
 type Link = {
   id: number;
@@ -27,7 +26,19 @@ export default function Home() {
   const onImageChange = (imageList: ImageListType) => {
     setImages(imageList);
   };
+  const signOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
 
+      setIsAuthenticated(false);
+      setUserId(undefined);
+
+      router.push("/login");
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
+  };
   useEffect(() => {
     const getUser = async () => {
       const { data, error } = await supabase.auth.getUser();
@@ -47,24 +58,52 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const getLinks = async () => {
+    const getLinks = async (userId: string) => {
       try {
         const { data, error } = await supabase
           .from("links")
-          .select("id,Title, URL")
+          .select("id, Title, URL")
           .eq("user_id", userId);
         if (error) throw error;
         setLinks(data);
-        console.log("data: ", data);
+        console.log("Links data: ", data);
       } catch (error) {
-        console.log("error: ", error);
+        console.error("Error fetching links: ", error);
       }
     };
-    if (userId) {
-      getLinks();
-    }
-  }, [userId]);
 
+    const getUserIdFromSlug = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("users")
+          .select("id")
+          .eq("username", creatorSlug)
+          .single();
+
+        if (error) throw error;
+        if (data) {
+          return data.id;
+        } else {
+          console.log(`No user found with creatorSlug: ${creatorSlug}`);
+          return null;
+        }
+      } catch (error) {
+        console.error("Error fetching user ID: ", error);
+        return null;
+      }
+    };
+
+    const fetchLinksForCreator = async () => {
+      if (creatorSlug) {
+        const userId = await getUserIdFromSlug();
+        if (userId) {
+          getLinks(userId);
+        }
+      }
+    };
+
+    fetchLinksForCreator();
+  }, [creatorSlug]);
   useEffect(() => {
     const getUser = async () => {
       try {
@@ -88,12 +127,12 @@ export default function Home() {
 
   useEffect(() => {
     const getUserTheme = async () => {
-      if (userId) {
+      if (creatorSlug) {
         try {
           const { data, error } = await supabase
             .from("users")
             .select("theme")
-            .eq("id", userId)
+            .eq("username", creatorSlug)
             .single();
 
           if (error) throw error;
@@ -238,6 +277,12 @@ export default function Home() {
           {/* Left Section for Authenticated User */}
           <div className="flex flex-col w-1/2 h-full p-4 space-y-6">
             <div className="flex items-center justify-start py-4">
+              <button
+                onClick={signOut}
+                className="p-2 px-3 mx-3 btn btn-active btn-neutral"
+              >
+                Sign Out
+              </button>
               <button onClick={toggleTheme} className="p-2">
                 {resolvedTheme === "dark" ? (
                   <Image

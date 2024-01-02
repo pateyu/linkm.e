@@ -23,7 +23,13 @@ export default function Login() {
         {
           const userId = res.data.user?.id;
           console.log("userId: ", userId);
-          router.push("/");
+          const username = await supabase
+            .from("users")
+            .select("username")
+            .eq("id", userId)
+            .single();
+
+          router.push(`/${username.data?.username}`);
         }
       }
     } catch (error) {
