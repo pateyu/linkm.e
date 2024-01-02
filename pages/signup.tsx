@@ -3,9 +3,10 @@ import supabase from "./utils/SupaBaseClient";
 import Image from "next/image";
 
 export default function Signup() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState<string | undefined>();
+  const [password, setPassword] = useState<string | undefined>();
   const [passwordShown, setPasswordShown] = useState(false);
+  const [username, setUsername] = useState<string | undefined>();
 
   const togglePasswordVisibility = () => {
     setPasswordShown(!passwordShown);
@@ -55,7 +56,17 @@ export default function Signup() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <label className="label mt-4">
+        <label htmlFor="username" className="label mt-4">
+          <span className="label-text text-white">Username</span>
+        </label>
+        <input
+          type="text"
+          placeholder="username"
+          className="input input-bordered text-white w-full py-3"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+        <label htmlFor="password" className="label mt-4">
           <span className="label-text text-white">Password</span>
         </label>
         <div className="relative">
@@ -88,7 +99,6 @@ export default function Signup() {
             )}
           </button>
         </div>
-
         <div className="flex justify-center mt-6">
           <button
             className="btn btn-active btn-neutral px-10"
