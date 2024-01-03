@@ -22,6 +22,7 @@ export default function Home() {
   const { resolvedTheme, setTheme } = useTheme();
   const router = useRouter();
   const { creatorSlug } = router.query;
+  const [isHalfAuthenticated, setIsHalfAuthenticated] = useState(false);
 
   const onImageChange = (imageList: ImageListType) => {
     setImages(imageList);
@@ -58,95 +59,41 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const getLinks = async (userId: string) => {
-      try {
-        const { data, error } = await supabase
-          .from("links")
-          .select("id, Title, URL")
-          .eq("user_id", userId);
-        if (error) throw error;
-        setLinks(data);
-        console.log("Links data: ", data);
-      } catch (error) {
-        console.error("Error fetching links: ", error);
-      }
-    };
-
-    const getUserIdFromSlug = async () => {
-      try {
-        const { data, error } = await supabase
+    const fetchData = async () => {
+      if (creatorSlug) {
+        // Fetch user details based on creatorSlug
+        const { data: userData, error: userError } = await supabase
           .from("users")
-          .select("id")
+          .select("id, profile_picture_url, theme")
           .eq("username", creatorSlug)
           .single();
 
-        if (error) throw error;
-        if (data) {
-          return data.id;
-        } else {
-          console.log(`No user found with creatorSlug: ${creatorSlug}`);
-          return null;
+        if (userData) {
+          setProfilePictureUrl(userData.profile_picture_url);
+          setTheme(userData.theme);
+
+          // Set half-authenticated state
+          const { data: authData } = await supabase.auth.getUser();
+          setIsHalfAuthenticated(authData.user?.id !== userData.id);
+
+          // Fetch links for the user
+          const { data: linksData } = await supabase
+            .from("links")
+            .select("id, Title, URL")
+            .eq("user_id", userData.id);
+
+          setLinks(linksData || []);
         }
-      } catch (error) {
-        console.error("Error fetching user ID: ", error);
-        return null;
+
+        if (userError) {
+          console.error("Error fetching user data:", userError);
+          setIsHalfAuthenticated(false);
+        }
       }
     };
 
-    const fetchLinksForCreator = async () => {
-      if (creatorSlug) {
-        const userId = await getUserIdFromSlug();
-        if (userId) {
-          getLinks(userId);
-        }
-      }
-    };
-
-    fetchLinksForCreator();
+    fetchData();
   }, [creatorSlug]);
-  useEffect(() => {
-    const getUser = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("users")
-          .select("id, profile_picture_url")
-          .eq("username", creatorSlug);
-        if (error) throw error;
-        const profilePictureUrl = data[0].profile_picture_url;
-        const userId = data[0].id;
-        setProfilePictureUrl(profilePictureUrl);
-        setUserId(userId);
-      } catch (error) {
-        console.log("error: ", error);
-      }
-    };
-    if (creatorSlug) {
-      getUser();
-    }
-  }, [creatorSlug]);
-
-  useEffect(() => {
-    const getUserTheme = async () => {
-      if (creatorSlug) {
-        try {
-          const { data, error } = await supabase
-            .from("users")
-            .select("theme")
-            .eq("username", creatorSlug)
-            .single();
-
-          if (error) throw error;
-          if (data && data.theme) {
-            setTheme(data.theme);
-          }
-        } catch (error) {
-          console.error("Error fetching user theme:", error);
-        }
-      }
-    };
-
-    getUserTheme();
-  }, [userId, setTheme]);
 
   const addNewLink = async () => {
     try {
@@ -272,7 +219,7 @@ export default function Home() {
   };
   return (
     <div className="flex h-screen px-4">
-      {isAuthenticated ? (
+      {isAuthenticated && !isHalfAuthenticated ? (
         <>
           {/* Left Section for Authenticated User */}
           <div className="flex flex-col w-1/2 h-full p-4 space-y-6">
