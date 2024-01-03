@@ -23,6 +23,7 @@ export default function Home() {
   const router = useRouter();
   const { creatorSlug } = router.query;
   const [isHalfAuthenticated, setIsHalfAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Loading state
 
   const onImageChange = (imageList: ImageListType) => {
     setImages(imageList);
@@ -60,8 +61,8 @@ export default function Home() {
 
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true); // Start loading
       if (creatorSlug) {
-        // Fetch user details based on creatorSlug
         const { data: userData, error: userError } = await supabase
           .from("users")
           .select("id, profile_picture_url, theme")
@@ -72,11 +73,9 @@ export default function Home() {
           setProfilePictureUrl(userData.profile_picture_url);
           setTheme(userData.theme);
 
-          // Set half-authenticated state
           const { data: authData } = await supabase.auth.getUser();
           setIsHalfAuthenticated(authData.user?.id !== userData.id);
 
-          // Fetch links for the user
           const { data: linksData } = await supabase
             .from("links")
             .select("id, Title, URL")
@@ -90,6 +89,7 @@ export default function Home() {
           setIsHalfAuthenticated(false);
         }
       }
+      setIsLoading(false);
     };
 
     fetchData();
@@ -219,7 +219,11 @@ export default function Home() {
   };
   return (
     <div className="flex h-screen px-4">
-      {isAuthenticated && !isHalfAuthenticated ? (
+      {isLoading ? (
+        <div className="flex w-full justify-center items-center h-screen">
+          <div className="animate-spin justify-center rounded-full h-32 w-32 border-b-4 border-white"></div>
+        </div>
+      ) : isAuthenticated && !isHalfAuthenticated ? (
         <>
           {/* Left Section for Authenticated User */}
           <div className="flex flex-col w-1/2 h-full p-4 space-y-6">

@@ -13,24 +13,44 @@ export default function Signup() {
   };
   async function signUpWithEmail() {
     try {
-      if (email && password) {
-        const res = await supabase.auth.signUp({
-          email: email,
-          password: password,
-        });
-        if (res.error) throw res.error;
-        const userId = res.data.user?.id;
-        if (userId) {
-          await createUser(userId, username || "");
-          console.log("userId: ", userId);
-          alert("Check your email for confirmation!");
-        }
+      if (!email || !password || !username) {
+        alert("Please fill in all fields!");
+        return;
+      }
+
+      // Check if username already exists
+      const { data: usernameData, error: usernameError } = await supabase
+        .from("users")
+        .select("id")
+        .eq("username", username)
+        .single();
+
+      if (usernameError && usernameError.message !== "No rows found") {
+        throw usernameError;
+      }
+
+      if (usernameData) {
+        alert("Username already taken!");
+        return;
+      }
+
+      // Proceed with sign up
+      const res = await supabase.auth.signUp({ email, password });
+      if (res.error) throw res.error;
+
+      // Create user in 'users' table
+      const userId = res.data.user?.id;
+      if (userId) {
+        await createUser(userId, username);
+        console.log("userId: ", userId);
+        alert("Check your email for confirmation!");
       }
     } catch (error) {
-      console.log("error: ", error);
+      console.error("Error: ", error);
       alert("Error signing up!");
     }
   }
+
   async function createUser(userId: string, username: string) {
     try {
       const { error } = await supabase
@@ -38,7 +58,8 @@ export default function Signup() {
         .insert({ id: userId, username: username });
       if (error) throw error;
     } catch (error) {
-      console.log("error: ", error);
+      console.error("Error: ", error);
+      alert("Could not create user profile.");
     }
   }
 
