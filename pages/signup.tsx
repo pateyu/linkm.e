@@ -18,7 +18,6 @@ export default function Signup() {
         return;
       }
 
-      // Check if username already exists
       const { data: usernameData, error: usernameError } = await supabase
         .from("users")
         .select("id")
@@ -34,11 +33,9 @@ export default function Signup() {
         return;
       }
 
-      // Proceed with sign up
       const res = await supabase.auth.signUp({ email, password });
       if (res.error) throw res.error;
 
-      // Create user in 'users' table
       const userId = res.data.user?.id;
       if (userId) {
         await createUser(userId, username);
