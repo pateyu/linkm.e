@@ -228,12 +228,6 @@ export default function Home() {
           {/* Left Section for Authenticated User */}
           <div className="flex flex-col w-1/2 h-full p-4 space-y-6">
             <div className="flex items-center justify-start py-4">
-              <button
-                onClick={signOut}
-                className="p-2 px-3 mx-3 btn btn-active btn-neutral"
-              >
-                Sign Out
-              </button>
               <button onClick={toggleTheme} className="p-2">
                 {resolvedTheme === "dark" ? (
                   <Image
@@ -250,6 +244,12 @@ export default function Home() {
                     height={24}
                   />
                 )}
+              </button>
+              <button
+                onClick={signOut}
+                className="p-2 px-3 mx-3 btn btn-active btn-neutral"
+              >
+                Sign Out
               </button>
             </div>
             <div className="flex flex-col p-4 space-y-5 h-full justify-center items-center">

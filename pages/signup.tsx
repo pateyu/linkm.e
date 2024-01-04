@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 import supabase from "./utils/SupaBaseClient";
 import Image from "next/image";
 
@@ -7,10 +8,18 @@ export default function Signup() {
   const [password, setPassword] = useState<string | undefined>();
   const [passwordShown, setPasswordShown] = useState(false);
   const [username, setUsername] = useState<string | undefined>();
+  const router = useRouter();
 
   const togglePasswordVisibility = () => {
     setPasswordShown(!passwordShown);
   };
+
+  useEffect(() => {
+    if (router.isReady && router.query.username) {
+      setUsername(router.query.username as string);
+    }
+  }, [router.isReady, router.query.username]);
+
   async function signUpWithEmail() {
     try {
       if (!email || !password || !username) {
