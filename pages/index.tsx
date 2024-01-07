@@ -1,28 +1,70 @@
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect } from "react";
 import { useRouter } from "next/router";
+import supabase from "./utils/SupaBaseClient";
 
 export default function Home() {
   const [username, setUsername] = useState("");
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [userId, setUserId] = useState<string | undefined>();
   const router = useRouter();
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data, error } = await supabase.auth.getUser();
+
+      console.log("User data: ", data);
+      console.log("Error: ", error);
+
+      if (data.user && !error) {
+        setIsAuthenticated(true);
+        setUserId(data.user.id);
+      } else {
+        setIsAuthenticated(false);
+        setUserId(undefined);
+      }
+    };
+    getUser();
+  }, []);
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     router.push(`/signup?username=${encodeURIComponent(username)}`);
   };
-
   const handleLogin = () => {
-    router.push("/signup");
+    router.push("/login");
   };
-
-  const handleLogout = () => {};
-
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (!error) {
+      setIsAuthenticated(false);
+      router.push("/");
+    } else {
+      console.error("Logout failed:", error);
+    }
+  };
   const handleSignup = () => {
     router.push("/signup");
   };
+  const handleProfile = async () => {
+    if (userId) {
+      try {
+        const { data, error } = await supabase
+          .from("users")
+          .select("username")
+          .eq("id", userId)
+          .single();
 
-  const handleProfile = () => {
-    router.push("/");
+        if (error) {
+          throw error;
+        }
+
+        if (data) {
+          router.push(`/${data.username}`);
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      }
+    }
   };
 
   return (
@@ -37,13 +79,13 @@ export default function Home() {
             <>
               <button
                 onClick={handleProfile}
-                className="btn btn-active btn-ghost"
+                className="btn btn-active border-none text-black bg-transparent"
               >
                 Profile
               </button>
               <button
                 onClick={handleLogout}
-                className="btn btn-active btn-ghost"
+                className="btn btn-active border-none text-black bg-transparent"
               >
                 Logout
               </button>
@@ -52,13 +94,13 @@ export default function Home() {
             <>
               <button
                 onClick={handleSignup}
-                className="btn btn-active bg-slate-700"
+                className="btn btn-active border-none text-black bg-transparent"
               >
                 Sign up
               </button>
               <button
                 onClick={handleLogin}
-                className="btn btn-active bg-slate-700"
+                className="btn btn-active border-none bg-transparent text-black"
               >
                 Login
               </button>
