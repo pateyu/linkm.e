@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useRouter } from "next/router";
 import supabase from "./utils/SupaBaseClient";
 import Image from "next/image";
 
@@ -8,55 +7,40 @@ export default function Signup() {
   const [password, setPassword] = useState<string | undefined>();
   const [passwordShown, setPasswordShown] = useState(false);
   const [username, setUsername] = useState<string | undefined>();
-  const router = useRouter();
+
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+
+    const urlUsername = query.get("username");
+
+    if (urlUsername) {
+      setUsername(urlUsername);
+    }
+  }, []);
 
   const togglePasswordVisibility = () => {
     setPasswordShown(!passwordShown);
   };
-
-  useEffect(() => {
-    if (router.isReady && router.query.username) {
-      setUsername(router.query.username as string);
-    }
-  }, [router.isReady, router.query.username]);
-
   async function signUpWithEmail() {
     try {
-      if (!email || !password || !username) {
-        alert("Please fill in all fields!");
-        return;
-      }
-
-      const { data: usernameData, error: usernameError } = await supabase
-        .from("users")
-        .select("id")
-        .eq("username", username)
-        .single();
-
-      if (usernameError && usernameError.message !== "No rows found") {
-        throw usernameError;
-      }
-
-      if (usernameData) {
-        alert("Username already taken!");
-        return;
-      }
-
-      const res = await supabase.auth.signUp({ email, password });
-      if (res.error) throw res.error;
-
-      const userId = res.data.user?.id;
-      if (userId) {
-        await createUser(userId, username);
-        console.log("userId: ", userId);
-        alert("Check your email for confirmation!");
+      if (email && password) {
+        const res = await supabase.auth.signUp({
+          email: email,
+          password: password,
+        });
+        if (res.error) throw res.error;
+        const userId = res.data.user?.id;
+        if (userId) {
+          await createUser(userId, username || "");
+          console.log("userId: ", userId);
+          alert("Check your email for confirmation!");
+        }
       }
     } catch (error) {
-      console.error("Error: ", error);
+      console.log("error: ", error);
       alert("Error signing up!");
     }
   }
-
   async function createUser(userId: string, username: string) {
     try {
       const { error } = await supabase
@@ -64,8 +48,7 @@ export default function Signup() {
         .insert({ id: userId, username: username });
       if (error) throw error;
     } catch (error) {
-      console.error("Error: ", error);
-      alert("Could not create user profile.");
+      console.log("error: ", error);
     }
   }
 
