@@ -10,9 +10,7 @@ export default function Signup() {
 
   useEffect(() => {
     const query = new URLSearchParams(window.location.search);
-
     const urlUsername = query.get("username");
-
     if (urlUsername) {
       setUsername(urlUsername);
     }

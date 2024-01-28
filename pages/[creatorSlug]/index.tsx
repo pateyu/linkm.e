@@ -23,7 +23,7 @@ export default function Home() {
   const router = useRouter();
   const { creatorSlug } = router.query;
   const [isHalfAuthenticated, setIsHalfAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // Loading state
+  const [isLoading, setIsLoading] = useState(true);
 
   const onImageChange = (imageList: ImageListType) => {
     setImages(imageList);
@@ -61,7 +61,7 @@ export default function Home() {
 
   useEffect(() => {
     const fetchData = async () => {
-      setIsLoading(true); // Start loading
+      setIsLoading(true);
       if (creatorSlug) {
         const { data: userData, error: userError } = await supabase
           .from("users")
@@ -93,7 +93,7 @@ export default function Home() {
     };
 
     fetchData();
-  }, [creatorSlug]);
+  }, [creatorSlug, setTheme]);
 
   const addNewLink = async () => {
     try {

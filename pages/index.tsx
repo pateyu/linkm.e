@@ -140,7 +140,7 @@ export default function Home() {
           <p className="text-lg mt-10 w-1/2 font-bold">
             Use Linkm.e to share all your social media profiles, music, stores,
             websites, and anything that is YOU with one link. And, the best part
-            is, wait for it ... it's completely FREE!
+            is, wait for it ... its completely FREE!
           </p>
         </div>
       </div>
