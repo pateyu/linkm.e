@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import supabase from "../utils/SupaBaseClient";
+import supabase from "../../utils/SupaBaseClient";
 import ImageUploading, { ImageListType } from "react-images-uploading";
 import { useTheme } from "next-themes";
 import Image from "next/image";
@@ -93,7 +93,7 @@ export default function Home() {
     };
 
     fetchData();
-  }, [creatorSlug, setTheme]);
+  }, [creatorSlug]);
 
   const addNewLink = async () => {
     try {
@@ -362,13 +362,13 @@ export default function Home() {
                 <div className="flex justify-center space-x-4">
                   <button
                     className="btn text-white bg-dark-500"
-                    onClick={() => setTheme("dark")}
+                    onClick={() => toggleTheme()}
                   >
                     Dark
                   </button>
                   <button
                     className="btn text-black bg-white"
-                    onClick={() => setTheme("light-theme")}
+                    onClick={() => toggleTheme()}
                   >
                     Light
                   </button>

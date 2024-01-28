@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
-import supabase from "./utils/SupaBaseClient";
+import supabase from "../utils/SupaBaseClient";
 import Image from "next/image";
 
 export default function Login() {

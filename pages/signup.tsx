@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import supabase from "./utils/SupaBaseClient";
+import supabase from "../utils/SupaBaseClient";
 import Image from "next/image";
 
 export default function Signup() {
