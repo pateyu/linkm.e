@@ -24,17 +24,17 @@ Visit [linkm.e](https://linkm-e.vercel.app) to create your own personalized link
 
 To get started with local development, make sure you have Node.js installed on your machine. Clone the repository and install dependencies:
 
-\`\`\`bash
+```bash
 git clone https://github.com/pateyu/linkm.e.git
 cd linkm.e
 npm install
-\`\`\`
+```
 
 To run the development server:
 
-\`\`\`bash
+```bash
 npm run dev
-\`\`\`
+```
 
 Navigate to `http://localhost:3000` to see the application in action.
 
