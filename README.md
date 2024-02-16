@@ -36,6 +36,12 @@ git clone https://github.com/pateyu/linkm.e.git
 cd linkm.e
 npm install
 ```
+create a .env.local file
+
+```.env.local
+NEXT_PUBLIC_SUPABASE_URL= YOUR_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY= YOUR_SUPABASE_ANON_KEY
+```
 
 To run the development server:
 
