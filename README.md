@@ -1,4 +1,4 @@
-```markdown
+
 # Linkm.e
 
 Welcome to `linkm.e` - a modern, fast, and customizable Linktree clone built with Next.js 13. This project is designed to provide individuals and businesses a personalized space on the web where they can share multiple links under a single URL. 
@@ -58,4 +58,3 @@ Yug Patel - yugbpatel30@gmail.com
 
 Project Link: [https://linkm.e](https://linkm-e.vercel.app)
 
-```
